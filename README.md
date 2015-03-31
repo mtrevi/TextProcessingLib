@@ -14,10 +14,10 @@ Submodules are really, really easy to reference and use. Assuming you already ha
 
 ```
 cd MyWebApp
-git submodule add https://github.com/xarabas/TextProcessingLib.git
+git submodule add https://github.com/xarabas/TextProcessingLib.git externals/TextProcessingLib
 ```
 
-This will create a directory named externals/jquery* and link it to the github jquery repository. Now we just need to init the submodule and clone the code to it:
+This will create a directory named externals/TextProcessingLib* and link it to the github jquery repository. Now we just need to init the submodule and clone the code to it:
 
 ```
 git submodule update --init --recursive
