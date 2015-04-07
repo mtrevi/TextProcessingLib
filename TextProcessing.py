@@ -83,40 +83,47 @@ def tokenize_string(text,lower=False):
    toker = RegexpTokenizer(r'((?<=[^\w\s])\w(?=[^\w\s])|(\W))+', gaps=True)
    return toker.tokenize(text.lower()) if lower else toker.tokenize(text)
 
+def remove_accents(data):
+   return ''.join(x for x in unicodedata.normalize('NFKD', data) if x in string.ascii_letters).lower()
+
 def remove_puntuation_hardly(text, lower=False):
    tokenizer = RegexpTokenizer(r'\w+')
    return tokenizer.tokenize(text)
 
 def remove_punctuation(text, lower=False):
    tokens = tokenize_string(text,lower)
-   return [w for w in tokens if w not in list(string.puntuation)]
+   return [w for w in tokens if w not in list(string.punctuation)]
 
-def remove_punctuation_and_number(text, lower=False):
+def remove_punctuation_and_number(text, asString=False, minLength=1, lower=False):
    l_words = tokenize_string(text,lower)
    # punctuation and numbers to be removed
    punctuation = re.compile(r'[-.?!,":;()|0-9]')
    out_words = []
    for word in l_words:
       word = punctuation.sub('', word)
-      if len(word) > 0:
+      if len(word) >= minLength:
          out_words.append(word)
+   if asString:
+      return ' '.join(out_words)
    return out_words
 
 ''' Tokenize text into words.
    @input string: string
-   @param lower: convert to lowercase or not
+   @param lower: flag for lowercase conversion
    @output: list of words '''
 def tokenize2words(string, lower=False, decode='utf-8'):
-   if lower:
-      return tokenizer.tokenize(string.decode('utf-8').lower())
+   if lower and decode is not None:
+      return tokenizer.tokenize(string.decode(decode).lower())
+   elif decode is not None:
+      return tokenizer.tokenize(string.decode(decode))
    else:
-      return tokenizer.tokenize(string.decode('utf-8'))
+      return tokenizer.tokenize(string.lower())
 
-''' Tokenizing (Document to list of sentences. Sentence to list of words.) 
-   Tokenizes into sentences, then strips punctuation/abbr, converts to lowercase and tokenizes words'''
-def tokenize2sentences2words(str):
-   return [word_tokenize(" ".join(re.findall(r'\w+', t,flags = re.UNICODE | re.LOCALE)).lower()) 
-      for t in sent_tokenize(str.replace("'", ""))]
+''' Tokenizes into sentences, strips punctuation/abbr, converts to lowercase and tokenizes words.
+   @output: list of words '''
+def tokenize2sentences2words(str, outputString=False):
+   return [word_tokenize(" ".join(re.findall(r'\w+', t,flags = re.UNICODE | re.LOCALE)).lower()) for t in sent_tokenize(str.replace("'", ""))]
+   ##
 
 
 ''' Removing stopwords. 
@@ -222,7 +229,7 @@ def preprocess_pipeline_bysentence(str, lang="english", stemmer_type="PorterStem
          words = remove_stopwords(sentence, lang)
       else:
          words = sentence
-      words = stemming(words, stemmer_type)
+      words = stemming(words, stemmer_type, lang=lang)
       if return_as_str:
          l.append(" ".join(words))
       else:
@@ -241,15 +248,18 @@ def preprocess_pipeline_bysentence(str, lang="english", stemmer_type="PorterStem
    @param do_remove_stopwords:
    @output: string or list of words
    '''
-def preprocess_pipeline(text, lang='', stemmer_type="PorterStemmer", return_as_str=False, do_remove_stopwords=False):
+def preprocess_pipeline(text, lang='', stemmer_type="PorterStemmer", return_as_str=False, do_remove_stopwords=False, decode='utf-8', lower=True, remove_accents=True):
    if len(text) == 0:
       return ''
    l_words = []
+   # remove accents
+   if remove_accents:
+      text = remove_accents( text )
    # detect language
    if lang == '':
       lang = get_language(text)
    # tokenize (remove also puntuation)
-   l_words = tokenize2words(text, lower=True)
+   l_words = tokenize2words(text, lower=lower, decode=decode)
    # remove stopwords
    if do_remove_stopwords and lang != '':
       l_words = remove_stopwords(l_words, lang)
@@ -257,7 +267,7 @@ def preprocess_pipeline(text, lang='', stemmer_type="PorterStemmer", return_as_s
    l_words = clean_as_keywords(l_words)
    # apply stemming
    if stemmer_type is not None:
-      l_words = stemming(l_words, stemmer_type)
+      l_words = stemming(l_words, stemmer_type, lang=lang)
    if return_as_str:
       return " ".join(l_words)
    else:
