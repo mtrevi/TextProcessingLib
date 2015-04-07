@@ -16,7 +16,7 @@ tokenizer = RegexpTokenizer(r'\w+')
 from sklearn.metrics import pairwise_distances
 import numpy as np
 
-
+import unicodedata
 import string
 import sys
 import re
@@ -83,8 +83,13 @@ def tokenize_string(text,lower=False):
    toker = RegexpTokenizer(r'((?<=[^\w\s])\w(?=[^\w\s])|(\W))+', gaps=True)
    return toker.tokenize(text.lower()) if lower else toker.tokenize(text)
 
-def remove_accents(data):
-   return ''.join(x for x in unicodedata.normalize('NFKD', data) if x in string.ascii_letters).lower()
+def keep_only_ascii_chars(data):
+   data = u'%s' %data
+   new_data = ''
+   for w in data.strip().split(' '):
+      new_data += ''.join(x for x in unicodedata.normalize('NFKD', w) if x in string.ascii_letters) + ' '
+   print new_data.strip()
+   return new_data.strip()
 
 def remove_puntuation_hardly(text, lower=False):
    tokenizer = RegexpTokenizer(r'\w+')
@@ -248,13 +253,15 @@ def preprocess_pipeline_bysentence(str, lang="english", stemmer_type="PorterStem
    @param do_remove_stopwords:
    @output: string or list of words
    '''
-def preprocess_pipeline(text, lang='', stemmer_type="PorterStemmer", return_as_str=False, do_remove_stopwords=False, decode='utf-8', lower=True, remove_accents=True):
+def preprocess_pipeline(text, lang='', stemmer_type="PorterStemmer", return_as_str=False, do_remove_stopwords=False, decode='utf-8', lower=True, noAccents=True):
    if len(text) == 0:
       return ''
    l_words = []
    # remove accents
-   if remove_accents:
-      text = remove_accents( text )
+   print "text:", text
+   if noAccents:
+      text = keep_only_ascii_chars( text )
+   print "text-after:", text
    # detect language
    if lang == '':
       lang = get_language(text)
