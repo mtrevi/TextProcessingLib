@@ -87,10 +87,10 @@ def get_best_language(string, default='english', verbose=False):
    @input text: string
    @param lower: flag for lowercase conversion
    @output: list of words '''
-def tokenize2words(text, lower=False, outString=False):
+def tokenize2words(text, lower=False, return_as_str=False):
    toker = RegexpTokenizer(r'((?<=[^\w\s])\w(?=[^\w\s])|(\W))+', gaps=True)
    l_words = toker.tokenize(text.lower()) if lower else toker.tokenize(text)
-   if outString:
+   if return_as_str:
       return ' '.join(l_words)
    else:
       return l_words
@@ -99,9 +99,11 @@ def tokenize2words(text, lower=False, outString=False):
 
 ''' Given a string, parse each character of each word and keep only the ones
    that actually belong to the ascii letters. '''
-def keep_only_ascii_chars(data):
+def keep_only_ascii_chars(data, lower=False):
    data = u'%s' %data
    new_data = ''
+   if lower:
+      data = data.lower()
    for w in data.strip().split(' '):
       new_data += ''.join(x for x in unicodedata.normalize('NFKD', w) if x in string.ascii_letters) + ' '
    return new_data.strip()
