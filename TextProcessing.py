@@ -219,7 +219,7 @@ def extract_text_from_html(html):
    @param do_remove_stopwords:
    @output: string or list of words
    '''
-def preprocess_pipeline(text, lang='', stemmer_type="PorterStemmer", return_as_str=False, do_remove_stopwords=False, decode=None, lower=True, noAccents=True):
+def preprocess_pipeline(text, lang='', stemmer_type="PorterStemmer", return_as_str=False, do_remove_stopwords=False, lower=True, noAccents=True, custom_stopwords=[]):
    if len(text) == 0:
       return ''
    l_words = []
@@ -233,12 +233,13 @@ def preprocess_pipeline(text, lang='', stemmer_type="PorterStemmer", return_as_s
    if lang == '':
       lang = get_language(text)
    # tokenize (remove also puntuation)
-   l_words = tokenize2words(text, lower=lower, decode=decode)
+   l_words = tokenize2words(text, lower=lower)
    # remove stopwords
    if do_remove_stopwords and lang != '':
       l_words = remove_stopwords(l_words, lang)
    # clean words
-   l_words = clean_as_keywords(l_words)
+   if len(custom_stopwords) > 0:
+      l_words = remove_custom_stopwords(l_words)
    # apply stemming
    if stemmer_type is not None:
       l_words = stemming(l_words, stemmer_type, lang=lang)
