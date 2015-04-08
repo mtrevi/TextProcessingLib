@@ -31,7 +31,6 @@ def toASCII(string):
    return unicodedata.normalize('NFKD', string).encode('ASCII', 'ignore')
 
 
-
 # ====================== #
 # LANGUAGE RELATED TOOLS #
 # ====================== #
@@ -51,6 +50,9 @@ def get_language(string):
    ## Finally, we only have to get the “key” with biggest “value”:
    return max(languages_ratios, key=languages_ratios.get)
 
+''' Exploit the external package "langid" that you can find at the following link:
+   https://github.com/saffsd/langid.py adapting the output to nltk. 
+   '''
 def get_language_langid(string, verbose=False):
    import langid
    ## dictionary
@@ -66,6 +68,8 @@ def get_language_langid(string, verbose=False):
       return ''
    return lang_code[lang_score[0]]
 
+''' Language Recognition based on two approaches. 
+   First langid, then the stopwords trick. '''
 def get_best_language(string, default='english', verbose=False):
    lang = get_language_langid(string, verbose=False)
    # if len(lang) <= 2:
@@ -76,61 +80,46 @@ def get_best_language(string, default='english', verbose=False):
 
 
 
-# ===================== #
-# BASIC TEXT PROCESSING #
-# ===================== # 
-def tokenize_string(text,lower=False):
+# ========================= #
+# CLEANING AND TOKENIZATION #
+# ========================= # 
+''' Tokenize text into words.
+   @input text: string
+   @param lower: flag for lowercase conversion
+   @output: list of words '''
+def tokenize2words(text, lower=False, outString=False):
    toker = RegexpTokenizer(r'((?<=[^\w\s])\w(?=[^\w\s])|(\W))+', gaps=True)
-   return toker.tokenize(text.lower()) if lower else toker.tokenize(text)
+   l_words = toker.tokenize(text.lower()) if lower else toker.tokenize(text)
+   if outString:
+      return ' '.join(l_words)
+   else:
+      return l_words
+   ##
+##
 
+''' Given a string, parse each character of each word and keep only the ones
+   that actually belong to the ascii letters. '''
 def keep_only_ascii_chars(data):
    data = u'%s' %data
    new_data = ''
    for w in data.strip().split(' '):
       new_data += ''.join(x for x in unicodedata.normalize('NFKD', w) if x in string.ascii_letters) + ' '
-   print new_data.strip()
    return new_data.strip()
-
-def remove_puntuation_hardly(text, lower=False):
-   tokenizer = RegexpTokenizer(r'\w+')
-   return tokenizer.tokenize(text)
-
-def remove_punctuation(text, lower=False):
-   tokens = tokenize_string(text,lower)
-   return [w for w in tokens if w not in list(string.punctuation)]
-
-def remove_punctuation_and_number(text, asString=False, minLength=1, lower=False):
-   l_words = tokenize_string(text,lower)
-   # punctuation and numbers to be removed
-   punctuation = re.compile(r'[-.?!,":;()|0-9]')
-   out_words = []
-   for word in l_words:
-      word = punctuation.sub('', word)
-      if len(word) >= minLength:
-         out_words.append(word)
-   if asString:
-      return ' '.join(out_words)
-   return out_words
-
-''' Tokenize text into words.
-   @input string: string
-   @param lower: flag for lowercase conversion
-   @output: list of words '''
-def tokenize2words(string, lower=False, decode='utf-8'):
-   if lower and decode is not None:
-      return tokenizer.tokenize(string.decode(decode).lower())
-   elif decode is not None:
-      return tokenizer.tokenize(string.decode(decode))
-   else:
-      return tokenizer.tokenize(string.lower())
+##
 
 ''' Tokenizes into sentences, strips punctuation/abbr, converts to lowercase and tokenizes words.
    @output: list of words '''
 def tokenize2sentences2words(str, outputString=False):
    return [word_tokenize(" ".join(re.findall(r'\w+', t,flags = re.UNICODE | re.LOCALE)).lower()) for t in sent_tokenize(str.replace("'", ""))]
    ##
+##
 
 
+
+
+# ===================== #
+# BASIC TEXT PROCESSING #
+# ===================== #
 ''' Removing stopwords. 
    @input l_words: list of words
    @input lang: language
@@ -149,7 +138,22 @@ def remove_stopwords(l_words, lang=''):
    l_stopwords = stopwords.words(lang)
    content = [w for w in l_words if w.lower() not in l_stopwords]
    return content
+##
 
+''' Removing stopwords from custom list. 
+   @input l_words: list of words
+   @input stopwords: custom list of stopword
+   @output content: outputs list of words '''
+def remove_custom_stopwords(l_words, stopwords=['www','com','it','fr','br','co']):
+   out_words = []
+   for w in l_words:
+      if len(w) <=2 or w in kw_stopwords:
+         continue
+      else:
+         out_words.append(w)
+   return out_words
+   ##
+##
 
 ''' Stem all words with stemmer of type, return encoded as "encoding" '''
 def stemming(words_l, type="PorterStemmer", lang="english", encoding="utf8"):
@@ -175,21 +179,8 @@ def stemming(words_l, type="PorterStemmer", lang="english", encoding="utf8"):
          for word in words_l:
             l.append(wnl.lemmatize(word).encode(encoding))
       return l
-
-
-# ====================== #
-# CUSTOM TEXT PROCESSING #
-# ====================== # 
-def clean_as_keywords(l_words):
-   out_words = []
-   kw_stopwords = ['www', 'com', 'it', 'fr', 'br', 'co']
-   for w in l_words:
-      if len(w) <=2 or w in kw_stopwords:
-         continue
-      else:
-         out_words.append(w)
-   return out_words
    ##
+##
 
 
 
@@ -199,6 +190,7 @@ def clean_as_keywords(l_words):
 ''' Clean HTML / strip tags TODO: remove page boilerplate (find main content), support email, pdf(?) '''
 def html2text(str):
    return clean_html(str)
+##
 
 def extract_text_from_html(html):
    from BeautifulSoup import BeautifulSoup
@@ -213,38 +205,12 @@ def extract_text_from_html(html):
          text_list_clean.append(val)
    text_string = ' '.join(text_list_clean)
    return text_string.strip()
-   # print len(topics)
-   # print topics[0].findChildren()[0]
-
+##
 
 
 # ==================== #
 # PROCESSING PIPELINES #
 # ==================== # 
-''' The preprocess pipeline. Returns as lists of tokens or as string. If stemmer_type = False or not supported then no stemming. '''
-def preprocess_pipeline_bysentence(str, lang="english", stemmer_type="PorterStemmer", return_as_str=False, do_remove_stopwords=False, do_clean_html=False):
-   l = []
-   words = []
-   if do_clean_html:
-      sentences = tokenize(html2text(str))
-   else:
-      sentences = tokenize(str)
-   for sentence in sentences:
-      if do_remove_stopwords:
-         words = remove_stopwords(sentence, lang)
-      else:
-         words = sentence
-      words = stemming(words, stemmer_type, lang=lang)
-      if return_as_str:
-         l.append(" ".join(words))
-      else:
-         l.append(words)
-   if return_as_str:
-      return " ".join(l)
-   else:
-      return l
-
-
 ''' Basic Text Processing Pipeline with 
    @input text: 
    @param lang:
@@ -253,15 +219,16 @@ def preprocess_pipeline_bysentence(str, lang="english", stemmer_type="PorterStem
    @param do_remove_stopwords:
    @output: string or list of words
    '''
-def preprocess_pipeline(text, lang='', stemmer_type="PorterStemmer", return_as_str=False, do_remove_stopwords=False, decode='utf-8', lower=True, noAccents=True):
+def preprocess_pipeline(text, lang='', stemmer_type="PorterStemmer", return_as_str=False, do_remove_stopwords=False, decode=None, lower=True, noAccents=True):
    if len(text) == 0:
       return ''
    l_words = []
    # remove accents
-   print "text:", text
    if noAccents:
-      text = keep_only_ascii_chars( text )
-   print "text-after:", text
+      try:
+         text = keep_only_ascii_chars( text )
+      except:
+         pass
    # detect language
    if lang == '':
       lang = get_language(text)
@@ -279,6 +246,8 @@ def preprocess_pipeline(text, lang='', stemmer_type="PorterStemmer", return_as_s
       return " ".join(l_words)
    else:
       return l_words
+   ##
+##
 
 
 ''' TermFrequency Text Processing Pipeline, Call the *preprocess_pipeline* and then compute TF
@@ -302,6 +271,7 @@ def pipeline_tf(text, lang='', stemmer_type="PorterStemmer", do_remove_stopwords
    l_words_tf = compute_tf(l_words)
    # return
    return l_words_tf
+
 
 
 # ================== #
@@ -369,7 +339,6 @@ def tfidf_similarity( collection_size, d_idf, d_tf_1, d_tf_2 ):
    return cosine_similarity(vect_1, vect_2)
    ##
 
-
 ''' Given a list of words comput the TF.
    @input l_words: list of words
    @output: dictionary with K:word and V:tf '''
@@ -405,7 +374,6 @@ def build_comparable_tf_vectors(tf_words_1, tf_words_2, normalize=False):
    return out_vect_1, out_vect_2
    ##
 
-
 def normalize_tf_list(l_words, norm_type='l1'):
    ## check normalization type
    if norm_type == 'l1':
@@ -414,7 +382,6 @@ def normalize_tf_list(l_words, norm_type='l1'):
          l_words[i] = float(l_words[i])/l_sum
    ##
    return l_words
-
 
 def normalize_tf_dict(d_words, norm_type='l1'):
    ## check normalization type
