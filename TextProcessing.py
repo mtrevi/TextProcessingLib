@@ -399,8 +399,14 @@ def normalize_tf_dict(d_words, norm_type='l1'):
 
 
 # =================== #
-# ENTITIES EXTRACTION #
+# SEMANTIC EXTRACTION #
 # =================== #
-
-
-
+''' Filter words that match the given POS_type.
+   @input l_words: list of words
+   @param pos_type: type of POS (e.g. 'NN', 'NNP', ..)
+   @outout: list of words with POS equal to POS_type
+   '''
+def filter_POS_type(l_words, pos_type='NN'):
+   from nltk import pos_tag, ne_chunk
+   ## select only nouns from l_words
+   return [word for word,pos in pos_tag( l_words ) if pos == pos_type]
